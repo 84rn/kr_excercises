@@ -120,6 +120,11 @@ void ungetch(int c)
 
 int getopt(char out[])
 {
+
+#define VAR_LEN 1
+#define MATH_LEN 3
+#define COMM_LEN 4
+
 	int i = 0;
 	char c;
 
@@ -130,10 +135,16 @@ int getopt(char out[])
 	if (isalpha(c))
 	{
 		while (isalpha(out[++i] = c = getch()))
-			;
-		
-		if (i < 4 && c != EOF ) 
-			ungetch(c);		
+			;		
+		int len = i - 1;
+
+		if (c != EOF)
+		{
+			if (c != '\n')
+				ungetch(c);
+			else if (len < MATH_LEN)  // command	
+				ungetch(c);
+		}
 
 		out[i] = '\0';
 		return COMMAND;
