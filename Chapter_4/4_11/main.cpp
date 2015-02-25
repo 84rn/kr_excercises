@@ -7,6 +7,8 @@
 #define MAXBUF 100
 #define NUMBER '0'
 #define COMMAND '^'
+#define VAR_SAVE '@'
+#define VAR_LOAD '#'
 
 /* Value stack variables and functions */
 
@@ -15,6 +17,8 @@ int sp;                                  // stack pointer initialized to 0
 
 int push(double val);
 double pop(void);
+double peek();
+int stack_empty();
 void clear_stack();
 void clone_top();
 void print_top();
@@ -32,6 +36,13 @@ void ungetch(int c);
 int getopt(char out[]);
 double atof(char s[]);
 void init_command(char c[]);
+
+/*
+To save a value in variable 'A' - use =A
+To load value from variable 'A' - use A
+Last printed value is in variable 'Z'
+*/
+double vars['Z' - 'A' + 1];
 
 int main(void)
 {
@@ -67,7 +78,12 @@ int main(void)
 				printf("Error: divide by 0\n");
 			break;
 		case '\n':
-			printf("\t%.8g\n", pop());
+			if (!stack_empty())
+			{
+				op2 = pop();
+				vars['z' - 'a'] = op2;
+				printf("\t%.8g\n", op2);
+			}
 			break;
 		case '%':
 			op2 = pop();
@@ -76,7 +92,12 @@ int main(void)
 			else
 				printf("Error: divide by 0\n");
 			break;
-
+		case VAR_SAVE:
+			vars[tolower(opt[1]) - 'a'] = peek();
+			break;
+		case VAR_LOAD:
+			push(vars[tolower(opt[0]) - 'a']);
+			break;
 		default:
 			printf("Error: unknown command %s\n", opt);
 			break;
@@ -106,6 +127,19 @@ double pop(void)
 	return 0.0;
 }
 
+double peek()
+{
+	if (sp)
+		return value_stack[sp - 1];
+
+	return 0.0;
+}
+
+int stack_empty()
+{
+	return sp == 0;
+}
+
 int getch(void)
 {
 	return (bp ? ch_buffer[--bp] : getchar());
@@ -124,57 +158,99 @@ int getopt(char out[])
 	int i = 0;
 	char c;
 	int ret;
+	static char un_buf = EOF;
 
-	while ((out[0] = c = getch()) == ' ' || c == '\t')
-		;
-	out[1] = '\0';	
+	while ((out[0] = c = (un_buf == EOF ? getch() : un_buf)) == ' ' || c == '\t')
+	{
+		un_buf = EOF;
+	}
+	un_buf = EOF;
+
+	out[1] = '\0';
+
+
+	if (c == '=')
+	{
+		if (isalpha(out[++i] = c = (un_buf == EOF ? getch() : un_buf)))
+		{
+			un_buf = EOF;
+			out[++i] = '\0';
+			return VAR_SAVE;
+		}
+		un_buf = EOF;
+
+		out[i] = '\0';
+		if (c != EOF)
+			un_buf = c;
+
+		return '=';
+	}
 
 	if (isalpha(c))
 	{
-		while (isalpha(out[++i] = c = getch()))
-			;
+		while (isalpha(out[++i] = c = (un_buf == EOF ? getch() : un_buf)))
+		{
+			un_buf = EOF;
+		}
+		un_buf = EOF;
+
 
 		out[i] = '\0';
 
-		ret = COMMAND;
+		if (strlen(out) == 1)
+			ret = VAR_LOAD;
+		else
+			ret = COMMAND;
 
 		if (c != EOF && strcmp("print", out))
-			ungetch(c);
+			un_buf = c;
 
 		return ret;
 	}
 
 	if (!isdigit(c) && c != '.' && c != '+' && c != '-')
+	{
 		return c;								// operator
+	}
 
 	if (c == '+' || c == '-')
 	{
-		out[++i] = c = getch();
+		out[++i] = c = (un_buf == EOF ? getch() : un_buf);
+		un_buf = EOF;
 		if (!isdigit(c))
 		{
 			out[i] = '\0';
+			un_buf = c;
 
-			ungetch(c);
 			return out[i - 1];
 		}
 	}
 
 	if (isdigit(c))
-	while (isdigit(out[++i] = c = getch()))
-		;
+	while (isdigit(out[++i] = c = (un_buf == EOF ? getch() : un_buf)))
+	{
+		un_buf = EOF;
+	}
+	un_buf = EOF;
+
 
 
 	if (c == '.')
-	while (isdigit(out[++i] = c = getch()))
-		;
+	while (isdigit(out[++i] = c = (un_buf == EOF ? getch() : un_buf)))
+	{
+		un_buf = EOF;
+	}
+	un_buf = EOF;
+
 
 	out[i] = '\0';
 
 	if (c != EOF)
-		ungetch(c);
+		un_buf = c;
 
 	return NUMBER;
 }
+
 
 double atof(char s[])
 {
@@ -244,7 +320,7 @@ void init_command(char c[])
 		push(pow(pop(), op2));
 	}
 	else if (!strcmp("exp", c))
-		push(exp(pop()));	
+		push(exp(pop()));
 	else
 		printf("Error: unknown command \"%s\".\n", c);
 }

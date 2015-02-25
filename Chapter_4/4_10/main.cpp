@@ -5,8 +5,16 @@
 
 #define MAXSTACK 100
 #define MAXBUF 100
+#define MAXLINE 1000
 #define NUMBER '0'
 #define COMMAND '^'
+#define VAR_SAVE '@'
+#define VAR_LOAD '#'
+
+/* Utilities for getline version */
+char linebuf[MAXLINE];
+int lp;                                  // line pointer
+int getline(char buf[], int lim);
 
 /* Value stack variables and functions */
 
@@ -15,10 +23,12 @@ int sp;                                  // stack pointer initialized to 0
 
 int push(double val);
 double pop(void);
+double peek();
 void clear_stack();
 void clone_top();
 void print_top();
 void swap_top();
+int stack_empty();
 
 /* ungetch() and getch() stuff */
 
@@ -27,60 +37,83 @@ int bp;                                  // buffer pointer (empty or not)
 
 int getch(void);
 void ungetch(int c);
+void ungets(char s[]);
 
 /* Others */
 int getopt(char out[]);
 double atof(char s[]);
 void init_command(char c[]);
 
+/*
+To save a value in variable 'A' - use =A
+To load value from variable 'A' - use A
+Last printed value is in variable 'Z'
+*/
+double vars['Z' - 'A' + 1];
+
 int main(void)
 {
 	char opt[1000];
+
 	int type;
 	double op2;
 
-	while ((type = getopt(opt)) != EOF)
+	while (getline(linebuf, MAXLINE))
 	{
-		switch (type)
+		lp = 0;
+		while ((type = getopt(opt)) != '\0')
 		{
-		case COMMAND:
-			init_command(opt);
-			break;
-		case NUMBER:
-			push(atof(opt));
-			break;
-		case '+':
-			push(pop() + pop());
-			break;
-		case '-':
-			op2 = pop();
-			push(pop() - op2);
-			break;
-		case '*':
-			push(pop() * pop());
-			break;
-		case '/':
-			op2 = pop();
-			if (op2)
-				push(pop() / op2);
-			else
-				printf("Error: divide by 0\n");
-			break;
-		case '\n':
-			printf("\t%.8g\n", pop());
-			break;
-		case '%':
-			op2 = pop();
-			if (op2)
-				push((int)pop() % (int)op2);
-			else
-				printf("Error: divide by 0\n");
-			break;
+			switch (type)
+			{
+			case COMMAND:
+				init_command(opt);
+				break;
+			case NUMBER:
+				push(atof(opt));
+				break;
+			case '+':
+				push(pop() + pop());
+				break;
+			case '-':
+				op2 = pop();
+				push(pop() - op2);
+				break;
+			case '*':
+				push(pop() * pop());
+				break;
+			case '/':
+				op2 = pop();
+				if (op2)
+					push(pop() / op2);
+				else
+					printf("Error: divide by 0\n");
+				break;
+			case '\n':
+				if (!stack_empty())
+				{
+					op2 = pop();
+					vars['z' - 'a'] = op2;
+					printf("\t%.8g\n", op2);
+				}
+				break;
+			case '%':
+				op2 = pop();
+				if (op2)
+					push((int)pop() % (int)op2);
+				else
+					printf("Error: divide by 0\n");
+				break;
+			case VAR_SAVE:
+				vars[tolower(opt[1]) - 'a'] = peek();
+				break;
+			case VAR_LOAD:
+				push(vars[tolower(opt[0]) - 'a']);
+				break;
+			default:
+				printf("Error: unknown command %s\n", opt);
+				break;
 
-		default:
-			printf("Error: unknown command %s\n", opt);
-			break;
-
+			}
 		}
 	}
 
@@ -106,15 +139,39 @@ double pop(void)
 	return 0.0;
 }
 
+int stack_empty()
+{
+	return sp == 0;
+}
+
+double peek()
+{
+	if (sp)
+		return value_stack[sp - 1];
+
+	return 0.0;
+}
+
 int getch(void)
 {
-	return (bp ? ch_buffer[--bp] : getchar());
+	return (bp > 0 ? ch_buffer[--bp] : getchar());
 }
 
 void ungetch(int c)
 {
 	if (bp < MAXBUF)
+	if (c != EOF)
 		ch_buffer[bp++] = c;
+	else
+		printf("Error: getch() buffer full\n");
+}
+
+void ungets(char s[])
+{
+	int i = strlen(s), j;
+	if (bp + i <= MAXBUF)
+	for (j = 0; j < i; j++)
+		ch_buffer[bp++] = s[j];
 	else
 		printf("Error: getch() buffer full\n");
 }
@@ -125,56 +182,84 @@ int getopt(char out[])
 	char c;
 	int ret;
 
-	while ((out[0] = c = getch()) == ' ' || c == '\t')
+
+	while ((out[0] = c = linebuf[lp++]) == ' ' || c == '\t')
 		;
-	out[1] = '\0';	
+	out[1] = '\0';
+
+	if (c == '=')
+	{
+		if (isalpha(out[++i] = c = linebuf[lp++]))
+		{
+			out[++i] = '\0';
+			return VAR_SAVE;
+		}
+
+		out[i] = '\0';
+
+		--lp;
+
+		return '=';
+	}
+
 
 	if (isalpha(c))
 	{
-		while (isalpha(out[++i] = c = getch()))
+		while (isalpha(out[++i] = c = linebuf[lp++]))
 			;
 
 		out[i] = '\0';
 
-		ret = COMMAND;
+		if (strlen(out) == 1)
+			ret = VAR_LOAD;
+		else
+			ret = COMMAND;
 
-		if (c != EOF && strcmp("print", out))
-			ungetch(c);
+		/* if there's a new line after print, we don't want to pop anything,
+		just print the stack */
+		if (!(!strcmp("print", out) && c == '\n'))
+			--lp;
+
+		//if(c != '\0') - this would fail if linebuf was 'print\0', print would
+		//  --lp          be returned, lp would advance after \0 and the next
+		//                option would come from garbage. Last char always has 
+		//                to be returned because of while(getopt!=\0) condition	
 
 		return ret;
 	}
+
 
 	if (!isdigit(c) && c != '.' && c != '+' && c != '-')
 		return c;								// operator
 
 	if (c == '+' || c == '-')
 	{
-		out[++i] = c = getch();
+		out[++i] = c = linebuf[lp++];
 		if (!isdigit(c))
 		{
 			out[i] = '\0';
 
-			ungetch(c);
+			--lp;
 			return out[i - 1];
 		}
 	}
 
 	if (isdigit(c))
-	while (isdigit(out[++i] = c = getch()))
+	while (isdigit(out[++i] = c = linebuf[lp++]))
 		;
 
 
 	if (c == '.')
-	while (isdigit(out[++i] = c = getch()))
+	while (isdigit(out[++i] = c = linebuf[lp++]))
 		;
 
 	out[i] = '\0';
 
-	if (c != EOF)
-		ungetch(c);
+	--lp;
 
 	return NUMBER;
 }
+
 
 double atof(char s[])
 {
@@ -244,9 +329,10 @@ void init_command(char c[])
 		push(pow(pop(), op2));
 	}
 	else if (!strcmp("exp", c))
-		push(exp(pop()));	
+		push(exp(pop()));
 	else
 		printf("Error: unknown command \"%s\".\n", c);
+
 }
 
 void clear_stack()
@@ -303,4 +389,22 @@ void swap_top()
 	{
 		printf("Nothing to swap.\n");
 	}
+}
+
+
+int getline(char buf[], int lim)
+{
+	char c;
+	int i;
+
+	for (i = 0; (i < lim - 1) && (c = getchar()) != EOF && c != '\n'; i++)
+		buf[i] = c;
+
+	if (c == '\n')
+		buf[i++] = c;
+
+	buf[i] = '\0';
+
+	return i;
+
 }

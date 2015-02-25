@@ -117,16 +117,11 @@ void ungetch(int c)
 	else
 		printf("Error: getch() buffer full\n");
 }
-
 int getopt(char out[])
 {
-
-#define VAR_LEN 1
-#define MATH_LEN 3
-#define COMM_LEN 4
-
 	int i = 0;
 	char c;
+	int ret;
 
 	while ((out[0] = c = getch()) == ' ' || c == '\t')
 		;
@@ -135,19 +130,16 @@ int getopt(char out[])
 	if (isalpha(c))
 	{
 		while (isalpha(out[++i] = c = getch()))
-			;		
-		int len = i - 1;
-
-		if (c != EOF)
-		{
-			if (c != '\n')
-				ungetch(c);
-			else if (len < MATH_LEN)  // command	
-				ungetch(c);
-		}
+			;
 
 		out[i] = '\0';
-		return COMMAND;
+	
+		ret = COMMAND;
+
+		if (c != EOF && strcmp("print", out))
+			ungetch(c);
+
+		return ret;
 	}
 
 	if (!isdigit(c) && c != '.' && c != '+' && c != '-')
@@ -159,6 +151,7 @@ int getopt(char out[])
 		if (!isdigit(c))
 		{
 			out[i] = '\0';
+
 			ungetch(c);
 			return out[i - 1];
 		}
@@ -258,7 +251,7 @@ void clone_top()
 		return;
 	}
 
-	if (sp + 1 < MAXSTACK)
+	if (sp + 1 <= MAXSTACK)
 	{
 		double val = value_stack[sp - 1];
 		value_stack[sp++] = val;
