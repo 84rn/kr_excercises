@@ -9,10 +9,12 @@ int strend_(char *s, char *t);
 int main(void)
 {
 	char s[] = "one two three";
-	char *t[7] = { "threeee", "thre", "three ", "thre ", "three", "   three   ", "threethree"};
+	char *t[14] = { "two", "one", "thr", "", "one three", "two three", 
+					"one two three", "threeee", "thre", "three ",
+					"thre ", "three", "   three   ", "threethree"};
 	
 	int i;
-	for (i = 0; i < 7; i++)
+	for (i = 0; i < 14; i++)
 	{
 		print_test(s, t[i], strend_);
 	}
