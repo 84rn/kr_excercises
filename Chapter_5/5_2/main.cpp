@@ -28,7 +28,7 @@ int getfloat(double *p)
 	while (isspace(c = getch()))
 		;
 
-	if (!isdigit(c) && c != '-' && c != '+' && c == EOF && c != '.')
+	if (!isdigit(c) && c != '-' && c != '+' && c != EOF && c != '.')
 		return 0;															// 0 for everything except digits / EOF
 
 	sign = (c == '-' ? -1 : 1);
