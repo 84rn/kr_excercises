@@ -76,7 +76,25 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="atoi_.cpp" />
+    <ClCompile Include="getch.cpp" />
+    <ClCompile Include="getline.cpp" />
+    <ClCompile Include="getopt.cpp" />
+    <ClCompile Include="itoa_.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="reverse.cpp" />
+    <ClCompile Include="strindex_.cpp" />
+    <ClCompile Include="tests.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="atoi_.h" />
+    <ClInclude Include="getch.h" />
+    <ClInclude Include="getline.h" />
+    <ClInclude Include="getopt.h" />
+    <ClInclude Include="itoa_.h" />
+    <ClInclude Include="reverse.h" />
+    <ClInclude Include="strindex_.h" />
+    <ClInclude Include="tests.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
