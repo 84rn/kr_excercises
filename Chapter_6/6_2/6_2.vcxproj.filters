@@ -24,12 +24,24 @@
     <ClCompile Include="getch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="linked_list.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="bin_tree.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="get_token.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="getch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="linked_list.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bin_tree.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

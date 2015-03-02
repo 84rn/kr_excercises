@@ -30,12 +30,33 @@ struct s_token * get_token()
 	char c;
 	struct s_token *p = NULL;
 	token_type type = EMPTY;
+	
 	int lines_open = 0;
+	char vtype[20];
 
 	while (isspace(c = *w = getch()));
 
 	if (*w != EOF)
 		w++;
+
+	/* Check for vars, pointers, funs and other names */
+	if (isalpha(c))
+	{
+		while ((isalnum(c = *w++ = getch()) || c == '_') && c != EOF);
+		if (c != EOF)
+		{
+			ungetch(c);
+		}
+		*--w = '\0';
+		type = IDENTIFIER;
+		p = new_token();
+
+		p->value = (char *)malloc((strlen(t) + 1) * sizeof(char));
+		strcpy(p->value, t);
+		p->type = type;
+		return p;
+
+	}
 
 	/* Check for comments, strings and preprocessor directives */
 	switch (c)
@@ -80,6 +101,7 @@ struct s_token * get_token()
 
 	case EOF:
 
+		*w = '\0';
 		break;
 	default:
 
@@ -87,6 +109,8 @@ struct s_token * get_token()
 		type = CHARACTER;
 		break;
 	}
+
+
 
 	if (type != EMPTY && strlen(t))
 	{
@@ -106,12 +130,10 @@ char * token_type_as_string(struct s_token *p)
 	{
 	case EMPTY:
 		return "EMPTY";
-	case VARIABLE:
-		return "VARIABLE";
+	case IDENTIFIER:
+		return "IDENTIFIER";
 	case PREPROCESSOR:
 		return "PREPROCESSOR";
-	case POINTER:
-		return "POINTER";
 	case COMMENT:
 		return "COMMENT";
 	case MULTI_COMMENT:

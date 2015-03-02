@@ -76,13 +76,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="bin_tree.cpp" />
     <ClCompile Include="getch.cpp" />
     <ClCompile Include="get_token.cpp" />
+    <ClCompile Include="linked_list.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="bin_tree.h" />
     <ClInclude Include="getch.h" />
     <ClInclude Include="get_token.h" />
+    <ClInclude Include="linked_list.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
