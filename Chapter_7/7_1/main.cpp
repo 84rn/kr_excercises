@@ -1,33 +1,38 @@
 #include <cctype>
 #include <cstdio>
 #include <cstring>
-
-enum prog_type
-{
-	TOLOWER,
-	TOUPPER,
-	NOACTION
-};
+#include <cstdlib>
 
 int main(int argc, char *argv[])
 {
 	char c;
 	int(*function)(int) = NULL;
-	char t[1000];
-	char *p;
+	char *arg = NULL;
+	char *name = NULL;
+	char *p = NULL;
 
-	strcpy(t, argv[0]);
-	p = strtok(t, "\\");
+	arg = (char *)malloc(strlen(argv[0] + 1));
+	strcpy(arg, argv[0]);
+
+	p = strtok(arg, "\\");
 
 	while (p != NULL)
 	{
-		if (!strncmp(p, "lower", 5))
-			function = tolower;
-		else if (!strncmp(p, "upper", 5))
-			function = toupper;
+		if (name)
+			free(name);
+		name = (char *)malloc(strlen(p) + 1);
+		strcpy(name, p);
 
 		p = strtok(NULL, "\\");
 	}
+
+	if (!strncmp(name, "lower", 5))
+		function = tolower;
+	else if (!strncmp(name, "upper", 5))
+		function = toupper;
+
+	free(name);
+	name = NULL;
 
 	if (!function)
 	{
