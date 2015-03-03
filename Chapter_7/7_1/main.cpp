@@ -6,34 +6,21 @@
 int main(int argc, char *argv[])
 {
 	char c;
-	int(*function)(int) = NULL;
-	char *arg = NULL;
-	char *name = NULL;
+	int(*function)(int) = NULL;	
 	char *p = NULL;
+	
+	p = strrchr(argv[0], '\\');
 
-	arg = (char *)malloc(strlen(argv[0] + 1));
-	strcpy(arg, argv[0]);
+	if (!p)
+		p = argv[0];
+	else
+		++p;	
 
-	p = strtok(arg, "\\");
-
-	while (p != NULL)
-	{
-		if (name)
-			free(name);
-		name = (char *)malloc(strlen(p) + 1);
-		strcpy(name, p);
-
-		p = strtok(NULL, "\\");
-	}
-
-	if (!strncmp(name, "lower", 5))
+	if (!strncmp(p, "lower", 5))
 		function = tolower;
-	else if (!strncmp(name, "upper", 5))
+	else if (!strncmp(p, "upper", 5))
 		function = toupper;
-
-	free(name);
-	name = NULL;
-
+	
 	if (!function)
 	{
 		printf("Please run the program either as \"lower\", or \"upper\"\n");
